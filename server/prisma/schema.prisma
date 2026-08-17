@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String   @unique
+  email        String?
+  passwordHash String
+  role         String   @default("MEMBER") // ADMIN | MEMBER
+  unitId       Int?
+  unit         Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  isOwner      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  expenses   Expense[]
+  complaints Complaint[]
+  notices    Notice[]
+}
+
+model Unit {
+  id             Int      @id @default(autoincrement())
+  unitNo         String   @unique
+  floor          Int      @default(1)
+  sqft           Int?
+  bhk            String   @default("1BHK") // 1BHK | 2BHK
+  amountOverride Float? // per-unit maintenance amount; overrides BHK default if set
+  ownerName      String
+  occupants      Int      @default(1)
+  createdAt      DateTime @default(now())
+
+  members    User[]
+  bills      Bill[]
+  complaints Complaint[]
+}
+
+model MaintenanceConfig {
+  id            Int      @id @default(autoincrement())
+  name          String
+  amount1bhk    Float    @default(1200)
+  amount2bhk    Float    @default(1729)
+  lateFeePerDay Float    @default(1)
+  dueDay        Int      @default(15)
+  effectiveFrom DateTime
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Bill {
+  id                Int        @id @default(autoincrement())
+  unitId            Int
+  unit              Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  month             Int
+  year              Int
+  amount            Float
+  lateFee           Float      @default(0)
+  status            String     @default("PENDING") // PENDING | PARTIAL | PAID | OVERDUE
+  dueDate           DateTime
+  paidAt            DateTime?
+  paymentMethod     String?
+  razorpayPaymentId String?
+  invoiceNo         String?
+  createdAt         DateTime   @default(now())
+
+  transactions PaymentTransaction[]
+
+  @@unique([unitId, month, year])
+}
+
+model PaymentTransaction {
+  id                Int      @id @default(autoincrement())
+  billId            Int
+  bill              Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount            Float
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  method            String?
+  status            String   @default("PENDING") // PENDING | PAID | FAILED
+  createdAt         DateTime @default(now())
+}
+
+model ExpenseCategory {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  expenses Expense[]
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+  vendor      String
+  amount      Float
+  date        DateTime
+  description String?
+  receiptPath String?
+  ocrText     String?
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}
+
+model Complaint {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unitId      Int?
+  unit        Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  category    String    @default("OTHER") // PLUMBING | ELECTRICAL | LIFT | CLEANING | WATER | PARKING | NOISE | OTHER
+  title       String
+  description String
+  priority    String    @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  status      String    @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  adminNote   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  resolvedAt  DateTime?
+}
+
+model Notice {
+  id          Int      @id @default(autoincrement())
+  title       String
+  body        String
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}

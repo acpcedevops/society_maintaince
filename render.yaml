@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: neev-plaza
+    runtime: node
+    plan: free
+    buildCommand: cd ../client && npm install && npm run build && rm -rf ../server/public && cp -r dist ../server/public && cd ../server && npm install
+    startCommand: cd server && node src/index.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES
+        value: "7d"
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: SOCIETY_NAME
+        value: "Neev Plaza"
+      - key: SOCIETY_ADDRESS
+        value: "Neev Plaza Society"
+      - key: SMTP_HOST
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: "Neev Plaza <neevplazataloja@gmail.com>"
