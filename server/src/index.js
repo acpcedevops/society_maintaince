@@ -51,10 +51,9 @@ app.use("/api/notices", noticesRoutes);
 const publicDir = path.join(__dirname, "..", "public");
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
-  app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      res.sendFile(path.join(publicDir, "index.html"));
-    }
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(publicDir, "index.html"));
   });
 }
 
