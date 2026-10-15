@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  GUARD
+}
+
+enum BillStatus {
+  PAID
+  PENDING
+  OVERDUE
+  PARTIAL
+}
+
+enum PayMethod {
+  ONLINE
+  CASH
+  CHEQUE
+  UPI
+  LINK
+}
+
+enum TransactionStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+enum ComplaintCategory {
+  PLUMBING
+  ELECTRICAL
+  CLEANING
+  LIFT
+  PARKING
+  WATER
+  NOISE
+  OTHER
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  DELETED
+}
+
+enum GateMode {
+  GATED
+  NON_GATED
+  HYBRID
+}
+
+enum VisitorType {
+  GUEST
+  DELIVERY
+  CAB
+  MAID
+  COOK
+  MAINTENANCE
+  OTHER
+}
+
+enum GateStatus {
+  PENDING
+  APPROVED
+  DENIED
+  ENTERED
+  EXITED
+  EXPIRED
+}
+
+enum PackagePlacement {
+  GATE
+  LOBBY
+  DROPBOX
+  HANDED_DIRECT
+}
+
+enum PackageStatus {
+  WAITING
+  COLLECTED
+}
+
+enum NotificationType {
+  VISITOR_REQUEST
+  VISITOR_DECISION
+  PACKAGE_WAITING
+  PACKAGE_COLLECTED
+  CALL
+  GENERAL
+}
+
+enum PassStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+}
+
+model Society {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique
+  address   String?
+  createdAt DateTime @default(now())
+
+  users          User[]
+  units          Unit[]
+  notices        Notice[]
+  expenses       Expense[]
+  categories     ExpenseCategory[]
+  configs        MaintenanceConfig[]
+  complaints     Complaint[]
+  securityPolicy SecurityPolicy?
+  gateEntries    GateEntry[]
+  packages       Package[]
+  gatePasses     GatePass[]
+  notifications  Notification[]
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  societyId    Int
+  name         String
+  phone        String
+  email        String?
+  passwordHash String
+  role         Role     @default(MEMBER)
+  unitId       Int?
+  isOwner      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  society    Society     @relation(fields: [societyId], references: [id])
+  unit       Unit?       @relation(fields: [unitId], references: [id])
+  complaints Complaint[]
+  notices    Notice[]    @relation("NoticeAuthor")
+  expenses   Expense[]
+
+  gateEntriesCreated  GateEntry[]    @relation("GateEntryCreated")
+  gateEntriesLogged   GateEntry[]    @relation("GateEntryLogged")
+  gateDecisions       GateEntry[]    @relation("GateEntryDecision")
+  packagesCollected   Package[]      @relation("PackageCollected")
+  passesCreated       GatePass[]     @relation("GatePassCreated")
+  passesUsed          GatePass[]     @relation("GatePassUsed")
+  notifications       Notification[]
+
+  @@unique([societyId, phone])
+  @@index([societyId])
+  @@index([unitId])
+}
+
+model Unit {
+  id             Int      @id @default(autoincrement())
+  societyId      Int
+  unitNo         String
+  floor          Int      @default(0)
+  sqft           Int?
+  bhk            String   @default("1BHK")
+  amountOverride Int?
+  ownerName      String?
+  occupants      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  society    Society     @relation(fields: [societyId], references: [id])
+  members    User[]
+  bills      Bill[]
+  complaints Complaint[]
+  gateEntries GateEntry[]
+  packages    Package[]
+  gatePasses  GatePass[]
+
+  @@unique([societyId, unitNo])
+  @@index([societyId])
+}
+
+model Bill {
+  id                Int        @id @default(autoincrement())
+  unitId            Int
+  month             Int
+  year              Int
+  amount            Int
+  lateFee           Int        @default(0)
+  status            BillStatus @default(PENDING)
+  dueDate           DateTime
+  paidAt            DateTime?
+  paymentMethod     PayMethod?
+  razorpayPaymentId String?
+  invoiceNo         String?
+  createdAt         DateTime   @default(now())
+
+  unit         Unit          @relation(fields: [unitId], references: [id])
+  transactions Transaction[]
+
+  @@unique([unitId, month, year])
+  @@index([year, month])
+}
+
+model Transaction {
+  id                Int               @id @default(autoincrement())
+  billId            Int
+  amount            Int
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  method            PayMethod         @default(ONLINE)
+  status            TransactionStatus @default(PAID)
+  createdAt         DateTime          @default(now())
+
+  bill Bill @relation(fields: [billId], references: [id])
+
+  @@index([billId])
+}
+
+model Complaint {
+  id          Int               @id @default(autoincrement())
+  societyId   Int
+  userId      Int
+  unitId      Int
+  category    ComplaintCategory @default(OTHER)
+  title       String
+  description String            @db.Text
+  priority    Priority          @default(NORMAL)
+  status      ComplaintStatus   @default(OPEN)
+  adminNote   String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  resolvedAt  DateTime?
+
+  society Society @relation(fields: [societyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  unit    Unit    @relation(fields: [unitId], references: [id])
+
+  @@index([societyId])
+  @@index([unitId])
+  @@index([status])
+}
+
+model Notice {
+  id          Int      @id @default(autoincrement())
+  societyId   Int
+  title       String
+  body        String   @db.Text
+  createdById Int
+  createdAt   DateTime @default(now())
+
+  society   Society @relation(fields: [societyId], references: [id])
+  createdBy User    @relation("NoticeAuthor", fields: [createdById], references: [id])
+
+  @@index([societyId])
+}
+
+model ExpenseCategory {
+  id        Int    @id @default(autoincrement())
+  societyId Int
+  name      String
+
+  society  Society   @relation(fields: [societyId], references: [id])
+  expenses Expense[]
+
+  @@unique([societyId, name])
+  @@index([societyId])
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  societyId   Int
+  categoryId  Int
+  vendor      String
+  amount      Int
+  date        DateTime
+  description String?  @db.Text
+  receiptPath String?
+  ocrText     String?  @db.Text
+  createdById Int
+  createdAt   DateTime @default(now())
+
+  society   Society         @relation(fields: [societyId], references: [id])
+  category  ExpenseCategory @relation(fields: [categoryId], references: [id])
+  createdBy User            @relation(fields: [createdById], references: [id])
+
+  @@index([societyId])
+  @@index([categoryId])
+}
+
+model MaintenanceConfig {
+  id            Int      @id @default(autoincrement())
+  societyId     Int
+  name          String   @default("Monthly Maintenance")
+  amount1bhk    Int
+  amount2bhk    Int
+  lateFeePerDay Int      @default(1)
+  dueDay        Int      @default(15)
+  effectiveFrom DateTime @default(now())
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  society Society @relation(fields: [societyId], references: [id])
+
+  @@index([societyId])
+}
+
+model SecurityPolicy {
+  id                    Int      @id @default(autoincrement())
+  societyId             Int      @unique
+  mode                  GateMode @default(GATED)
+  requireOtpForDelivery Boolean  @default(true)
+  guardCanOverride      Boolean  @default(true)
+  dropPointEnabled      Boolean  @default(true)
+  dropPointLabel        String?  @default("Gate / Lobby")
+  otpExpiryMinutes      Int      @default(120)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  society Society @relation(fields: [societyId], references: [id])
+}
+
+model GateEntry {
+  id           Int         @id @default(autoincrement())
+  societyId    Int
+  unitId       Int
+  type         VisitorType @default(GUEST)
+  name         String
+  phone        String?
+  vehicleNo    String?
+  purpose      String?
+  photoPath    String?
+  status       GateStatus  @default(PENDING)
+  expectedAt   DateTime?
+  enteredAt    DateTime?
+  exitedAt     DateTime?
+  otp          String?
+  otpExpiresAt DateTime?
+  notes        String?     @db.Text
+  loggedById   Int?
+  createdById  Int
+  decisionById Int?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  society    Society  @relation(fields: [societyId], references: [id])
+  unit       Unit     @relation(fields: [unitId], references: [id])
+  createdBy  User     @relation("GateEntryCreated", fields: [createdById], references: [id])
+  loggedBy   User?    @relation("GateEntryLogged", fields: [loggedById], references: [id])
+  decisionBy User?    @relation("GateEntryDecision", fields: [decisionById], references: [id])
+  packages   Package[]
+  passes     GatePass[]
+
+  @@index([societyId])
+  @@index([unitId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Package {
+  id            Int              @id @default(autoincrement())
+  societyId     Int
+  gateEntryId   Int?
+  unitId        Int
+  partner       String?
+  count         Int              @default(1)
+  placement     PackagePlacement @default(GATE)
+  status        PackageStatus    @default(WAITING)
+  receivedAt    DateTime         @default(now())
+  collectedAt   DateTime?
+  collectedById Int?
+  notes         String?          @db.Text
+
+  society     Society    @relation(fields: [societyId], references: [id])
+  unit        Unit       @relation(fields: [unitId], references: [id])
+  gateEntry   GateEntry? @relation(fields: [gateEntryId], references: [id])
+  collectedBy User?      @relation("PackageCollected", fields: [collectedById], references: [id])
+
+  @@index([societyId])
+  @@index([unitId])
+  @@index([status])
+}
+
+model GatePass {
+  id          Int        @id @default(autoincrement())
+  societyId   Int
+  unitId      Int
+  gateEntryId Int?
+  token       String     @unique
+  purpose     String?
+  status      PassStatus @default(ACTIVE)
+  expiresAt   DateTime
+  createdById Int
+  usedById    Int?
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  society   Society    @relation(fields: [societyId], references: [id])
+  unit      Unit       @relation(fields: [unitId], references: [id])
+  gateEntry GateEntry? @relation(fields: [gateEntryId], references: [id])
+  createdBy User       @relation("GatePassCreated", fields: [createdById], references: [id])
+  usedBy    User?      @relation("GatePassUsed", fields: [usedById], references: [id])
+
+  @@index([societyId])
+  @@index([unitId])
+  @@index([status])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  societyId Int
+  userId    Int
+  type      NotificationType @default(GENERAL)
+  title     String
+  body      String?          @db.Text
+  link      String?
+  read      Boolean          @default(false)
+  meta      Json?
+  createdAt DateTime         @default(now())
+
+  society Society @relation(fields: [societyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([societyId])
+  @@index([userId, read])
+}

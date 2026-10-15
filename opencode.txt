@@ -1,0 +1,9 @@
+ Session   Replicating society maintenance app
+  Continue  opencode -s ses_ec76773acffeP4dLTg0ZyrKQZ9
+
+sarin@sarin-ThinkCentre-M70s:~/Videos/Society-,maintaince$
+
+
+ Session   QR delivery verification with owner call
+  Continue  opencode -s ses_ec5c55819ffeH2M7Kfu69f1UtK
+

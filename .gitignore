@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+server/uploads/*
+!server/uploads/.gitkeep
+server/eng.traineddata
+*.log
+.DS_Store
+
+# local secrets / scratch
+rzp-test-key.csv
