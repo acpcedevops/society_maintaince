@@ -39,9 +39,23 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
   .th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+    @apply whitespace-nowrap px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-4;
   }
   .td {
-    @apply px-4 py-3 text-sm text-slate-700;
+    @apply whitespace-nowrap px-3 py-3 text-sm text-slate-700 sm:px-4;
+  }
+}
+
+/* Visible horizontal scrollbar on table containers so touch users know they can scroll. */
+@layer utilities {
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+  }
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 9999px;
+  }
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background-color: rgb(241 245 249);
   }
 }

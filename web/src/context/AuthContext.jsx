@@ -44,14 +44,35 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const res = await api.post('/auth/register', { type: 'member', ...payload });
+    if (res.data.pending) {
+      return { pending: true, message: res.data.message, user: res.data.user };
+    }
     persist(res.data);
     return res.data.user;
   }, []);
 
   const registerSociety = useCallback(async (payload) => {
     const res = await api.post('/auth/register-society', payload);
+    if (res.data.pending) {
+      return { pending: true, message: res.data.message, user: res.data.user };
+    }
     persist(res.data);
     return res.data.user;
+  }, []);
+
+  const forgotPassword = useCallback(async (payload) => {
+    const res = await api.post('/auth/forgot-password', payload);
+    return res.data;
+  }, []);
+
+  const validateResetToken = useCallback(async (token) => {
+    const res = await api.get('/auth/reset-password', { params: { token } });
+    return res.data.valid;
+  }, []);
+
+  const resetPassword = useCallback(async (payload) => {
+    const res = await api.post('/auth/reset-password', payload);
+    return res.data;
   }, []);
 
   const logout = useCallback(() => {
@@ -68,6 +89,9 @@ export function AuthProvider({ children }) {
     login,
     register,
     registerSociety,
+    forgotPassword,
+    validateResetToken,
+    resetPassword,
     logout,
   };
 

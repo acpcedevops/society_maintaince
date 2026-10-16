@@ -17,8 +17,18 @@ function sign(user) {
   );
 }
 
+// Platform-level (super) admin token. `typ` distinguishes it from society users
+// so the two token families can never be used interchangeably.
+function signSuper(admin) {
+  return jwt.sign(
+    { id: admin.id, role: 'SUPER_ADMIN', typ: 'super', name: admin.name, email: admin.email },
+    SECRET,
+    { expiresIn: EXPIRES_IN }
+  );
+}
+
 function verify(token) {
   return jwt.verify(token, SECRET);
 }
 
-module.exports = { sign, verify };
+module.exports = { sign, signSuper, verify };

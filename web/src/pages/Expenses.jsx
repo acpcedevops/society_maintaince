@@ -58,7 +58,7 @@ export default function Expenses() {
           <h1 className="text-xl font-bold text-slate-800">Society Expenses</h1>
           <p className="text-sm text-slate-400">Total spent: {money(total)}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className="btn-outline" onClick={exportCSV}>
             Export CSV
           </button>
@@ -76,47 +76,87 @@ export default function Expenses() {
         ) : expenses.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">No expenses recorded for this period.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="th">Date</th>
-                  <th className="th">Category</th>
-                  <th className="th">Vendor</th>
-                  <th className="th">Description</th>
-                  <th className="th">Amount</th>
-                  <th className="th">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {expenses.map((e) => (
-                  <tr key={e.id}>
-                    <td className="td">{formatDate(e.date)}</td>
-                    <td className="td">
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+          <>
+            <ul className="space-y-3 p-3 md:hidden">
+              {expenses.map((e) => (
+                <li key={e.id} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-800">{e.vendor}</p>
+                      <p className="text-xs text-slate-400">{formatDate(e.date)}</p>
+                      <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                         {e.category?.name}
                       </span>
-                    </td>
-                    <td className="td font-medium">{e.vendor}</td>
-                    <td className="td text-slate-500">{e.description || '—'}</td>
-                    <td className="td font-semibold">{money(e.amount)}</td>
-                    <td className="td">
-                      <div className="flex gap-1">
-                        {e.receiptPath && (
-                          <a className="btn-ghost text-brand-600" href={e.receiptPath} target="_blank" rel="noreferrer">
-                            Receipt
-                          </a>
-                        )}
-                        <button className="btn-ghost text-red-500" onClick={() => remove(e)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+                      {e.description && (
+                        <p className="mt-1 text-xs text-slate-500">{e.description}</p>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-sm font-bold text-slate-800">{money(e.amount)}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {e.receiptPath && (
+                      <a
+                        className="btn-outline px-3 py-1.5 text-sm"
+                        href={e.receiptPath}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Receipt
+                      </a>
+                    )}
+                    <button
+                      className="btn-outline px-3 py-1.5 text-sm text-red-600"
+                      onClick={() => remove(e)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="th">Date</th>
+                    <th className="th">Category</th>
+                    <th className="th">Vendor</th>
+                    <th className="th">Description</th>
+                    <th className="th">Amount</th>
+                    <th className="th">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {expenses.map((e) => (
+                    <tr key={e.id}>
+                      <td className="td">{formatDate(e.date)}</td>
+                      <td className="td">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          {e.category?.name}
+                        </span>
+                      </td>
+                      <td className="td font-medium">{e.vendor}</td>
+                      <td className="td max-w-[220px] whitespace-normal text-slate-500">{e.description || '—'}</td>
+                      <td className="td font-semibold">{money(e.amount)}</td>
+                      <td className="td">
+                        <div className="flex gap-1">
+                          {e.receiptPath && (
+                            <a className="btn-ghost text-brand-600" href={e.receiptPath} target="_blank" rel="noreferrer">
+                              Receipt
+                            </a>
+                          )}
+                          <button className="btn-ghost text-red-500" onClick={() => remove(e)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -232,7 +272,7 @@ function ExpenseModal({ open, categories, onClose, onDone }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Category</label>
             <select className="input" value={form.categoryId} onChange={set('categoryId')}>
@@ -248,7 +288,7 @@ function ExpenseModal({ open, categories, onClose, onDone }) {
             <input className="input" value={form.amount} onChange={set('amount')} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Vendor / Service Provider</label>
             <input className="input" value={form.vendor} onChange={set('vendor')} />

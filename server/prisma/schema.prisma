@@ -13,6 +13,18 @@ enum Role {
   GUARD
 }
 
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SocietyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum BillStatus {
   PAID
   PENDING
@@ -118,6 +130,7 @@ model Society {
   name      String   @unique
   code      String   @unique
   address   String?
+  status    SocietyStatus @default(APPROVED)
   createdAt DateTime @default(now())
 
   users          User[]
@@ -132,6 +145,34 @@ model Society {
   packages       Package[]
   gatePasses     GatePass[]
   notifications  Notification[]
+  paymentConfig  SocietyPaymentConfig?
+}
+
+model SuperAdmin {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model SocietyPaymentConfig {
+  id                Int      @id @default(autoincrement())
+  societyId         Int      @unique
+  upiId             String?
+  payeeName         String?
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  razorpayKeyId     String?
+  razorpayKeySecret String?
+  qrImagePath       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  society Society @relation(fields: [societyId], references: [id])
 }
 
 model User {
@@ -141,10 +182,11 @@ model User {
   phone        String
   email        String?
   passwordHash String
-  role         Role     @default(MEMBER)
+  role         Role       @default(MEMBER)
+  status       UserStatus @default(APPROVED)
   unitId       Int?
-  isOwner      Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  isOwner      Boolean    @default(false)
+  createdAt    DateTime   @default(now())
 
   society    Society     @relation(fields: [societyId], references: [id])
   unit       Unit?       @relation(fields: [unitId], references: [id])
@@ -159,6 +201,7 @@ model User {
   passesCreated       GatePass[]     @relation("GatePassCreated")
   passesUsed          GatePass[]     @relation("GatePassUsed")
   notifications       Notification[]
+  resetTokens         PasswordResetToken[]
 
   @@unique([societyId, phone])
   @@index([societyId])
@@ -432,4 +475,17 @@ model Notification {
 
   @@index([societyId])
   @@index([userId, read])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

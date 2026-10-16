@@ -144,7 +144,7 @@ export default function Gate() {
               : 'Approve visitors and track your deliveries'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
             <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
               {['activity', 'settings'].map((t) => (
@@ -398,7 +398,7 @@ function ActivityPanel({ isAdmin, isGuard, entries, packages, stats, onAct, onDe
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                   {p.placement}
                 </span>
@@ -471,7 +471,7 @@ function EntryRow({ entry, actions, highlight, compact }) {
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge value={entry.status} />
         {!compact && actions}
       </div>
@@ -557,7 +557,7 @@ function LogVisitorModal({ open, onClose, units, guardCanOverride, onDone }) {
             </select>
           </div>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Type</label>
             <select className="input" value={form.type} onChange={set('type')}>
@@ -573,7 +573,7 @@ function LogVisitorModal({ open, onClose, units, guardCanOverride, onDone }) {
             <input className="input" value={form.name} onChange={set('name')} placeholder="Visitor name" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Phone</label>
             <input className="input" value={form.phone} onChange={set('phone')} placeholder="Optional" />
@@ -860,7 +860,7 @@ function GuardsCard({ guards, onSaved }) {
                 <p className="text-sm font-semibold text-slate-700">{g.name}</p>
                 <p className="text-xs text-slate-400">{g.phone}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button className="btn-ghost text-brand-600" onClick={() => setEditing(g)}>
                   Edit
                 </button>

@@ -60,45 +60,81 @@ export default function Flats() {
         ) : units.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">No units added yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="th">Unit No</th>
-                  <th className="th">Floor</th>
-                  <th className="th">BHK</th>
-                  <th className="th">Owner</th>
-                  <th className="th">Occupants</th>
-                  <th className="th">Custom Amount</th>
-                  <th className="th">Members</th>
-                  <th className="th">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {units.map((u) => (
-                  <tr key={u.id}>
-                    <td className="td font-semibold">{u.unitNo}</td>
-                    <td className="td">{u.floor}</td>
-                    <td className="td">{u.bhk}</td>
-                    <td className="td">{u.ownerName || '—'}</td>
-                    <td className="td">{u.occupants}</td>
-                    <td className="td">{u.amountOverride ? money(u.amountOverride) : '—'}</td>
-                    <td className="td">{u.members?.length || u._count?.members || 0}</td>
-                    <td className="td">
-                      <div className="flex gap-1">
-                        <button className="btn-ghost text-brand-600" onClick={() => setEditing(u)}>
-                          Edit
-                        </button>
-                        <button className="btn-ghost text-red-500" onClick={() => remove(u)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <ul className="space-y-3 p-3 md:hidden">
+              {units.map((u) => (
+                <li key={u.id} className="card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800">{u.unitNo}</p>
+                      <p className="text-xs text-slate-400">
+                        {u.bhk} · Floor {u.floor}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Owner: {u.ownerName || '—'} · {u.occupants} occupant{u.occupants === 1 ? '' : 's'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {u.amountOverride ? `Custom ${money(u.amountOverride)}` : 'Standard BHK rate'} ·{' '}
+                        {u.members?.length || u._count?.members || 0} member
+                        {(u.members?.length || u._count?.members || 0) === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button className="btn-outline px-3 py-1.5 text-sm" onClick={() => setEditing(u)}>
+                      Edit
+                    </button>
+                    <button
+                      className="btn-outline px-3 py-1.5 text-sm text-red-600"
+                      onClick={() => remove(u)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="th">Unit No</th>
+                    <th className="th">Floor</th>
+                    <th className="th">BHK</th>
+                    <th className="th">Owner</th>
+                    <th className="th">Occupants</th>
+                    <th className="th">Custom Amount</th>
+                    <th className="th">Members</th>
+                    <th className="th">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {units.map((u) => (
+                    <tr key={u.id}>
+                      <td className="td font-semibold">{u.unitNo}</td>
+                      <td className="td">{u.floor}</td>
+                      <td className="td">{u.bhk}</td>
+                      <td className="td">{u.ownerName || '—'}</td>
+                      <td className="td">{u.occupants}</td>
+                      <td className="td">{u.amountOverride ? money(u.amountOverride) : '—'}</td>
+                      <td className="td">{u.members?.length || u._count?.members || 0}</td>
+                      <td className="td">
+                        <div className="flex gap-1">
+                          <button className="btn-ghost text-brand-600" onClick={() => setEditing(u)}>
+                            Edit
+                          </button>
+                          <button className="btn-ghost text-red-500" onClick={() => remove(u)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -189,7 +225,7 @@ function UnitModal({ open, unit, onClose, onDone }) {
       }
     >
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Flat / Unit Number</label>
             <input className="input" value={form.unitNo} onChange={set('unitNo')} placeholder="e.g. A-101" />
@@ -199,7 +235,7 @@ function UnitModal({ open, unit, onClose, onDone }) {
             <input className="input" value={form.floor} onChange={set('floor')} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">BHK</label>
             <select className="input" value={form.bhk} onChange={set('bhk')}>

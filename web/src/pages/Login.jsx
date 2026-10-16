@@ -15,14 +15,15 @@ const EMPTY = {
 };
 
 export default function Login() {
-  const { login, register, registerSociety, user } = useAuth();
+  const { login, register, registerSociety, forgotPassword, user } = useAuth();
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState('login'); // login | register
+  const [mode, setMode] = useState('login'); // login | register | forgot
   const [registerType, setRegisterType] = useState('member'); // member | society
   const [societies, setSocieties] = useState([]);
   const [units, setUnits] = useState([]);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(EMPTY);
 
@@ -38,7 +39,7 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
-    if (registerType === 'member' && form.societyId) {
+    if (registerType === 'member' && form.societyId && mode === 'register') {
       api
         .get(`/societies/${form.societyId}/units`)
         .then((res) => setUnits(res.data.units))
@@ -46,13 +47,14 @@ export default function Login() {
     } else {
       setUnits([]);
     }
-  }, [form.societyId, registerType]);
+  }, [form.societyId, registerType, mode]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const switchMode = (m) => {
     setMode(m);
     setError('');
+    setNotice('');
     setForm(EMPTY);
   };
 
@@ -60,13 +62,21 @@ export default function Login() {
     e.preventDefault();
     setBusy(true);
     setError('');
+    setNotice('');
     try {
-      if (mode === 'login') {
+      if (mode === 'forgot') {
+        if (!form.societyId) throw new Error('Please select your society');
+        if (!form.email.trim()) throw new Error('Please enter your email address');
+        const res = await forgotPassword({ societyId: form.societyId, email: form.email.trim() });
+        setNotice(res.message || 'If an account with that email exists, a reset link has been sent.');
+        setForm((f) => ({ ...f, email: '' }));
+      } else if (mode === 'login') {
         if (!form.societyId) throw new Error('Please select your society');
         await login(form.societyId, form.phone.trim(), form.password);
+        navigate('/', { replace: true });
       } else if (registerType === 'member') {
         if (!form.societyId) throw new Error('Please select your society');
-        await register({
+        const result = await register({
           societyId: form.societyId,
           name: form.name.trim(),
           phone: form.phone.trim(),
@@ -74,8 +84,15 @@ export default function Login() {
           password: form.password,
           unitNo: form.unitNo || undefined,
         });
+        if (result && result.pending) {
+          setMode('login');
+          setForm(EMPTY);
+          setNotice(result.message);
+          return;
+        }
+        navigate('/', { replace: true });
       } else {
-        await registerSociety({
+        const result = await registerSociety({
           societyName: form.societyName.trim(),
           societyAddress: form.societyAddress.trim() || undefined,
           name: form.name.trim(),
@@ -83,8 +100,14 @@ export default function Login() {
           email: form.email.trim() || undefined,
           password: form.password,
         });
+        if (result && result.pending) {
+          setMode('login');
+          setForm(EMPTY);
+          setNotice(result.message);
+          return;
+        }
+        navigate('/', { replace: true });
       }
-      navigate('/', { replace: true });
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -93,37 +116,50 @@ export default function Login() {
   };
 
   const isLogin = mode === 'login';
-  const isJoin = !isLogin && registerType === 'member';
-  const isCreate = !isLogin && registerType === 'society';
+  const isForgot = mode === 'forgot';
+  const isRegister = mode === 'register';
+  const isJoin = isRegister && registerType === 'member';
+  const isCreate = isRegister && registerType === 'society';
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-brand-700 px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-brand-700 px-4 py-8 sm:py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center sm:mb-6">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-2xl font-bold text-white">
             N
           </div>
-          <h1 className="text-2xl font-bold text-white">Society Maintenance Portal</h1>
+          <h1 className="text-xl font-bold text-white sm:text-2xl">Society Maintenance Portal</h1>
           <p className="text-sm text-brand-100">Maintenance &amp; Community Management</p>
         </div>
 
-        <div className="card p-6">
-          <div className="mb-5 flex rounded-lg bg-slate-100 p-1">
-            {['login', 'register'].map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                className={`flex-1 rounded-md py-2 text-sm font-semibold transition ${
-                  mode === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500'
-                }`}
-              >
-                {m === 'login' ? 'Login' : 'Create Account'}
-              </button>
-            ))}
-          </div>
+        <div className="card p-5 sm:p-6">
+          {!isForgot && (
+            <div className="mb-5 flex rounded-lg bg-slate-100 p-1">
+              {['login', 'register'].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => switchMode(m)}
+                  className={`flex-1 rounded-md py-2 text-sm font-semibold transition ${
+                    mode === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500'
+                  }`}
+                >
+                  {m === 'login' ? 'Login' : 'Create Account'}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {!isLogin && (
+          {isForgot && (
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-slate-800">Reset your password</h2>
+              <p className="text-xs text-slate-400">
+                Enter your society and registered email. We&apos;ll email you a secure link to set a new password.
+              </p>
+            </div>
+          )}
+
+          {isRegister && (
             <div className="mb-4 flex gap-2">
               <button
                 type="button"
@@ -203,62 +239,110 @@ export default function Login() {
               </div>
             )}
 
-            {(!isLogin || isCreate) && (
+            {isRegister && (
               <div>
                 <label className="label">{isCreate ? 'Admin Full Name' : 'Full Name'}</label>
                 <input className="input" value={form.name} onChange={set('name')} required placeholder="Your full name" />
               </div>
             )}
 
-            {!isLogin && (
+            {(isRegister || isForgot) && (
               <div>
-                <label className="label">Email (optional)</label>
-                <input className="input" type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" />
+                <label className="label">{isForgot ? 'Registered Email' : 'Email (optional)'}</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={form.email}
+                  onChange={set('email')}
+                  required={isForgot}
+                  placeholder="you@example.com"
+                />
               </div>
             )}
 
-            <div>
-              <label className="label">Phone Number</label>
-              <input
-                className="input"
-                value={form.phone}
-                onChange={set('phone')}
-                required
-                minLength={10}
-                placeholder="10-digit mobile number"
-              />
-            </div>
+            {!isForgot && (
+              <div>
+                <label className="label">Phone Number</label>
+                <input
+                  className="input"
+                  value={form.phone}
+                  onChange={set('phone')}
+                  required
+                  minLength={10}
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+            )}
 
-            <div>
-              <label className="label">Password</label>
-              <input
-                className="input"
-                type="password"
-                value={form.password}
-                onChange={set('password')}
-                required
-                minLength={isLogin ? 1 : 6}
-                placeholder="Password (min 6 chars)"
-              />
-            </div>
+            {!isForgot && (
+              <div>
+                <label className="label">Password</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={form.password}
+                  onChange={set('password')}
+                  required
+                  minLength={isLogin ? 1 : 6}
+                  placeholder="Password (min 6 chars)"
+                />
+              </div>
+            )}
 
             {isCreate && (
               <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
-                You will become the administrator of this society. You can add units and members next.
+                You will become the administrator of this society. A platform administrator must approve it
+                before you can log in.
               </p>
             )}
 
+            {isJoin && (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                New member accounts need approval from a society admin before you can log in.
+              </p>
+            )}
+
+            {notice && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{notice}</p>}
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
             <button type="submit" className="btn-primary w-full" disabled={busy}>
-              {busy ? 'Please wait...' : isLogin ? 'Login' : isCreate ? 'Create Society' : 'Create Account'}
+              {busy
+                ? 'Please wait...'
+                : isForgot
+                ? 'Send reset link'
+                : isLogin
+                ? 'Login'
+                : isCreate
+                ? 'Create Society'
+                : 'Create Account'}
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-slate-400">
-            Demo — Neev Plaza: Admin 9999999999 / admin123 · Member 9000000000 / member123
-            <br />
-            Green Valley: Admin 9999999999 / admin123 (same number, different society)
+          {isLogin && (
+            <button
+              type="button"
+              onClick={() => switchMode('forgot')}
+              className="mt-3 block w-full text-center text-xs font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Forgot password?
+            </button>
+          )}
+
+          {isForgot && (
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="mt-3 block w-full text-center text-xs font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Back to login
+            </button>
+          )}
+
+          <p className="mt-4 text-center text-xs text-slate-400">
+            Platform administrator?{' '}
+            <a href="/super/login" className="font-semibold text-brand-600 hover:underline">
+              Sign in here
+            </a>
           </p>
         </div>
       </div>

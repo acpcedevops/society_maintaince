@@ -2,23 +2,31 @@ const crypto = require('crypto');
 
 let Razorpay = null;
 
-function isConfigured() {
-  return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+// Resolves the Razorpay credentials to use: per-society keys take priority,
+// otherwise fall back to the global environment configuration.
+function resolveKeys(keys) {
+  return {
+    keyId: keys?.keyId || process.env.RAZORPAY_KEY_ID || null,
+    keySecret: keys?.keySecret || process.env.RAZORPAY_KEY_SECRET || null,
+  };
 }
 
-function getClient() {
-  if (!isConfigured()) return null;
+function isConfigured(keys) {
+  const { keyId, keySecret } = resolveKeys(keys);
+  return Boolean(keyId && keySecret);
+}
+
+function getClient(keys) {
+  const { keyId, keySecret } = resolveKeys(keys);
+  if (!keyId || !keySecret) return null;
   if (!Razorpay) {
     Razorpay = require('razorpay');
   }
-  return new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-  });
+  return new Razorpay({ key_id: keyId, key_secret: keySecret });
 }
 
-async function createOrder({ amount, receipt, notes }) {
-  const client = getClient();
+async function createOrder({ amount, receipt, notes, keys }) {
+  const client = getClient(keys);
   if (!client) {
     return {
       mock: true,
@@ -40,13 +48,11 @@ async function createOrder({ amount, receipt, notes }) {
   return { mock: false, order };
 }
 
-function verifySignature({ orderId, paymentId, signature }) {
-  if (!isConfigured()) return true;
-  const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-    .update(`${orderId}|${paymentId}`)
-    .digest('hex');
+function verifySignature({ orderId, paymentId, signature, keys }) {
+  const { keySecret } = resolveKeys(keys);
+  if (!keySecret) return true;
+  const expected = crypto.createHmac('sha256', keySecret).update(`${orderId}|${paymentId}`).digest('hex');
   return expected === signature;
 }
 
-module.exports = { isConfigured, getClient, createOrder, verifySignature };
+module.exports = { isConfigured, getClient, createOrder, verifySignature, resolveKeys };

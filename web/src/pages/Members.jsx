@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api, { apiError } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
 import Spinner from '../components/Spinner.jsx';
+import Badge from '../components/Badge.jsx';
 import { Icon, icons } from '../components/Icon.jsx';
 
 export default function Members() {
@@ -39,6 +40,23 @@ export default function Members() {
     }
   };
 
+  const setStatus = async (member, status) => {
+    const verb = status === 'APPROVED' ? 'Approve' : 'Reject';
+    if (!confirm(`${verb} ${member.name}?`)) return;
+    try {
+      await api.patch(`/members/${member.id}/status`, { status });
+      load();
+    } catch (err) {
+      alert(apiError(err));
+    }
+  };
+
+  const pendingCount = useMemo(() => members.filter((m) => m.status === 'PENDING').length, [members]);
+  const ordered = useMemo(
+    () => [...members].sort((a, b) => (a.status === 'PENDING' ? -1 : 0) - (b.status === 'PENDING' ? -1 : 0)),
+    [members]
+  );
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -53,49 +71,136 @@ export default function Members() {
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
+      {pendingCount > 0 && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {pendingCount} registration{pendingCount > 1 ? 's' : ''} awaiting your approval.
+        </p>
+      )}
+
       <div className="card overflow-hidden">
         {loading ? (
           <Spinner />
         ) : members.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">No members registered</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="th">Name</th>
-                  <th className="th">Phone</th>
-                  <th className="th">Email</th>
-                  <th className="th">Unit</th>
-                  <th className="th">Role</th>
-                  <th className="th">Owner</th>
-                  <th className="th">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {members.map((m) => (
-                  <tr key={m.id}>
-                    <td className="td font-semibold">{m.name}</td>
-                    <td className="td">{m.phone}</td>
-                    <td className="td">{m.email || '—'}</td>
-                    <td className="td">{m.unit?.unitNo || '—'}</td>
-                    <td className="td">{m.role}</td>
-                    <td className="td">{m.isOwner ? 'Yes' : 'No'}</td>
-                    <td className="td">
-                      <div className="flex gap-1">
-                        <button className="btn-ghost text-brand-600" onClick={() => setEditing(m)}>
-                          Edit
+          <>
+            <ul className="space-y-3 p-3 md:hidden">
+              {ordered.map((m) => (
+                <li
+                  key={m.id}
+                  className={`card p-4 ${m.status === 'PENDING' ? 'border-amber-200 bg-amber-50/40' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-800">{m.name}</p>
+                      <p className="text-xs text-slate-400">{m.phone}</p>
+                      {m.email && <p className="break-all text-xs text-slate-400">{m.email}</p>}
+                      <p className="mt-1 text-xs text-slate-500">
+                        Unit {m.unit?.unitNo || '—'} · {m.isOwner ? 'Owner' : 'Tenant'}
+                      </p>
+                    </div>
+                    <Badge value={m.status || 'APPROVED'} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {m.status === 'PENDING' && (
+                      <>
+                        <button
+                          className="btn-primary px-3 py-1.5 text-sm"
+                          onClick={() => setStatus(m, 'APPROVED')}
+                        >
+                          Approve
                         </button>
-                        <button className="btn-ghost text-red-500" onClick={() => remove(m)}>
-                          Delete
+                        <button
+                          className="btn-outline px-3 py-1.5 text-sm text-red-600"
+                          onClick={() => setStatus(m, 'REJECTED')}
+                        >
+                          Reject
                         </button>
-                      </div>
-                    </td>
+                      </>
+                    )}
+                    {m.status === 'REJECTED' && (
+                      <button
+                        className="btn-primary px-3 py-1.5 text-sm"
+                        onClick={() => setStatus(m, 'APPROVED')}
+                      >
+                        Approve
+                      </button>
+                    )}
+                    <button className="btn-outline px-3 py-1.5 text-sm" onClick={() => setEditing(m)}>
+                      Edit
+                    </button>
+                    <button
+                      className="btn-outline px-3 py-1.5 text-sm text-red-600"
+                      onClick={() => remove(m)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="th">Name</th>
+                    <th className="th">Phone</th>
+                    <th className="th">Email</th>
+                    <th className="th">Unit</th>
+                    <th className="th">Owner</th>
+                    <th className="th">Status</th>
+                    <th className="th">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ordered.map((m) => (
+                    <tr key={m.id} className={m.status === 'PENDING' ? 'bg-amber-50/40' : undefined}>
+                      <td className="td font-semibold">{m.name}</td>
+                      <td className="td">{m.phone}</td>
+                      <td className="td">{m.email || '—'}</td>
+                      <td className="td">{m.unit?.unitNo || '—'}</td>
+                      <td className="td">{m.isOwner ? 'Yes' : 'No'}</td>
+                      <td className="td">
+                        <Badge value={m.status || 'APPROVED'} />
+                      </td>
+                      <td className="td">
+                        <div className="flex flex-wrap gap-1">
+                          {m.status === 'PENDING' && (
+                            <>
+                              <button
+                                className="btn-ghost text-emerald-600"
+                                onClick={() => setStatus(m, 'APPROVED')}
+                              >
+                                Approve
+                              </button>
+                              <button className="btn-ghost text-red-500" onClick={() => setStatus(m, 'REJECTED')}>
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {m.status === 'REJECTED' && (
+                            <button
+                              className="btn-ghost text-emerald-600"
+                              onClick={() => setStatus(m, 'APPROVED')}
+                            >
+                              Approve
+                            </button>
+                          )}
+                          <button className="btn-ghost text-brand-600" onClick={() => setEditing(m)}>
+                            Edit
+                          </button>
+                          <button className="btn-ghost text-red-500" onClick={() => remove(m)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -191,7 +296,7 @@ function MemberModal({ open, member, units, onClose, onDone }) {
           <label className="label">Full Name</label>
           <input className="input" value={form.name} onChange={set('name')} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Phone Number</label>
             <input className="input" value={form.phone} onChange={set('phone')} />
@@ -201,7 +306,7 @@ function MemberModal({ open, member, units, onClose, onDone }) {
             <input className="input" value={form.email} onChange={set('email')} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Unit</label>
             <select className="input" value={form.unitId} onChange={set('unitId')}>

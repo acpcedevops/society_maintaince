@@ -7,6 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res, next) => {
   try {
     const societies = await prisma.society.findMany({
+      where: { status: 'APPROVED' },
       select: { id: true, name: true, code: true, address: true },
       orderBy: { name: 'asc' },
     });
@@ -22,6 +23,10 @@ router.get('/:id/units', async (req, res, next) => {
     const societyId = Number(req.params.id);
     if (!Number.isFinite(societyId)) {
       return res.status(400).json({ error: 'Invalid society id' });
+    }
+    const society = await prisma.society.findUnique({ where: { id: societyId } });
+    if (!society || society.status !== 'APPROVED') {
+      return res.status(404).json({ error: 'Society not available' });
     }
     const units = await prisma.unit.findMany({
       where: { societyId },

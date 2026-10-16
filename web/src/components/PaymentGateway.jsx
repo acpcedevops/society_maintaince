@@ -11,7 +11,7 @@ const METHODS = [
 
 const BANKS = ['HDFC Bank', 'ICICI Bank', 'State Bank of India', 'Axis Bank', 'Kotak Mahindra Bank', 'Punjab National Bank'];
 
-export default function PaymentGateway({ open, amount, order, user, label, societyName, onClose, onPaid }) {
+export default function PaymentGateway({ open, amount, order, user, label, societyName, societyConfig, onClose, onPaid }) {
   const [method, setMethod] = useState('upi');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -105,6 +105,30 @@ export default function PaymentGateway({ open, amount, order, user, label, socie
 
           {method === 'upi' && (
             <div className="space-y-3">
+              {societyConfig?.upiId && (
+                <div className="rounded-lg border border-brand-100 bg-brand-50/60 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-700">
+                    Pay to {societyConfig.payeeName || societyName || 'this society'}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className="break-all text-sm font-semibold text-slate-700">{societyConfig.upiId}</span>
+                    <button
+                      type="button"
+                      className="btn-outline px-2 py-1 text-xs"
+                      onClick={() => navigator.clipboard?.writeText(societyConfig.upiId)}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  {societyConfig.qrImagePath && (
+                    <img
+                      src={societyConfig.qrImagePath}
+                      alt="Payment QR code"
+                      className="mt-3 h-32 w-32 rounded-lg border border-slate-200 bg-white object-contain"
+                    />
+                  )}
+                </div>
+              )}
               <div>
                 <label className="label">UPI ID / VPA</label>
                 <input

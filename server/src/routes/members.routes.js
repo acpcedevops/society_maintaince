@@ -45,11 +45,50 @@ router.post('/', protect, adminOnly, async (req, res, next) => {
         email: data.email || null,
         passwordHash: await bcrypt.hash(data.password || 'member123', 10),
         role: 'MEMBER',
+        status: 'APPROVED',
         unitId: unit.id,
         isOwner: data.isOwner ?? true,
       },
     });
     res.status(201).json({ member: publicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Approve or reject a (self-registered) member. Only affected by status PENDING/REJECTED.
+router.patch('/:id/status', protect, adminOnly, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = z
+      .object({ status: z.enum(['PENDING', 'APPROVED', 'REJECTED']) })
+      .parse(req.body);
+
+    const existing = await prisma.user.findFirst({
+      where: { id, societyId: req.user.societyId, role: 'MEMBER' },
+    });
+    if (!existing) return res.status(404).json({ error: 'Member not found' });
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { status },
+      include: { unit: true },
+    });
+
+    if (status === 'APPROVED' && existing.status !== 'APPROVED') {
+      await prisma.notification.create({
+        data: {
+          societyId: req.user.societyId,
+          userId: user.id,
+          type: 'GENERAL',
+          title: 'Account approved',
+          body: 'Your account has been approved. You can now log in.',
+          link: '/',
+        },
+      });
+    }
+
+    res.json({ member: publicUser(user) });
   } catch (err) {
     next(err);
   }

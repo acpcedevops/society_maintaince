@@ -7,6 +7,39 @@ const payments = require('../services/payments');
 
 const router = express.Router();
 
+async function getSocietyKeys(societyId) {
+  const config = await prisma.societyPaymentConfig.findUnique({ where: { societyId } });
+  return {
+    keyId: config?.razorpayKeyId || null,
+    keySecret: config?.razorpayKeySecret || null,
+  };
+}
+
+// Per-society payment details shown to members (never exposes the secret).
+router.get('/society-config', protect, async (req, res, next) => {
+  try {
+    const config = await prisma.societyPaymentConfig.findUnique({
+      where: { societyId: req.user.societyId },
+    });
+    const { keyId } = payments.resolveKeys(await getSocietyKeys(req.user.societyId));
+    res.json({
+      config: {
+        upiId: config?.upiId || null,
+        payeeName: config?.payeeName || null,
+        bankName: config?.bankName || null,
+        bankAccountName: config?.bankAccountName || null,
+        bankAccountNumber: config?.bankAccountNumber || null,
+        bankIfsc: config?.bankIfsc || null,
+        qrImagePath: config?.qrImagePath || null,
+        razorpayKeyId: keyId,
+        hasRazorpay: Boolean(keyId),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 function ensureBillAccess(bill, user) {
   if (!bill) return false;
   if (user.role === 'ADMIN') return true;
@@ -60,13 +93,16 @@ router.post('/create-order', protect, async (req, res, next) => {
 
     const config = await getActiveConfig(req.user.societyId);
     const total = bill.amount + (decorateBill(bill, config).lateFee || 0);
+    const keys = await getSocietyKeys(req.user.societyId);
     const result = await payments.createOrder({
       amount: total,
       receipt: `bill_${bill.id}`,
       notes: { billId: String(bill.id) },
+      keys,
     });
+    const { keyId } = payments.resolveKeys(keys);
     res.json({
-      keyId: process.env.RAZORPAY_KEY_ID || null,
+      keyId,
       mock: result.mock,
       order: result.order,
       amount: total,
@@ -93,12 +129,15 @@ router.post('/create-bulk-order', protect, async (req, res, next) => {
       .filter((b) => b.status !== 'PAID')
       .reduce((sum, b) => sum + b.amount + (decorateBill(b, config).lateFee || 0), 0);
 
+    const keys = await getSocietyKeys(req.user.societyId);
     const result = await payments.createOrder({
       amount: total,
       receipt: `bulk_${Date.now()}`,
       notes: { billIds: ids.join(',') },
+      keys,
     });
-    res.json({ keyId: process.env.RAZORPAY_KEY_ID || null, mock: result.mock, order: result.order, amount: total });
+    const { keyId } = payments.resolveKeys(keys);
+    res.json({ keyId, mock: result.mock, order: result.order, amount: total });
   } catch (err) {
     next(err);
   }
@@ -119,6 +158,7 @@ router.post('/verify', protect, async (req, res, next) => {
       orderId: body.razorpay_order_id,
       paymentId: body.razorpay_payment_id,
       signature: body.razorpay_signature,
+      keys: await getSocietyKeys(req.user.societyId),
     });
     if (!valid) return res.status(400).json({ error: 'Payment signature verification failed' });
 
@@ -147,6 +187,7 @@ router.post('/verify-bulk', protect, async (req, res, next) => {
       orderId: body.razorpay_order_id,
       paymentId: body.razorpay_payment_id,
       signature: body.razorpay_signature,
+      keys: await getSocietyKeys(req.user.societyId),
     });
     if (!valid) return res.status(400).json({ error: 'Payment signature verification failed' });
 

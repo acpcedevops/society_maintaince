@@ -43,7 +43,7 @@ export default function CallOverlay() {
   const incoming = phase === 'incoming';
 
   return (
-    <div className="fixed bottom-5 right-5 z-[60] w-80">
+    <div className="fixed bottom-5 right-5 z-[60] w-80 max-w-[calc(100vw-2.5rem)]">
       {showError && (
         <div className="mb-2 flex items-start gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm text-white shadow-xl">
           <span className="flex-1">{error}</span>

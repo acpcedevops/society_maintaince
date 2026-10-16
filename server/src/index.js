@@ -9,6 +9,7 @@ const morgan = require('morgan');
 
 const { errorHandler, notFound } = require('./middleware/error');
 const { initSockets } = require('./lib/socket');
+const { bootstrapSuperAdmin } = require('./lib/superadmin');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/config', require('./routes/config.routes'));
 app.use('/api/gate', require('./routes/gate.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/societies', require('./routes/societies.routes'));
+app.use('/api/super', require('./routes/super.routes'));
 const { denyGuard } = require('./middleware/auth');
 app.use(['/api/units', '/api/members', '/api/bills', '/api/payments', '/api/complaints', '/api/notices', '/api/expenses', '/api/reports'], denyGuard);
 app.use('/api/units', require('./routes/units.routes'));
@@ -52,6 +54,7 @@ const server = http.createServer(app);
 initSockets(server, { corsOrigin: process.env.CORS_ORIGIN || true });
 server.listen(PORT, () => {
   console.log(`Society Maintenance API running on http://localhost:${PORT}`);
+  bootstrapSuperAdmin().catch((err) => console.error('[superadmin] bootstrap failed:', err.message));
 });
 
 module.exports = app;

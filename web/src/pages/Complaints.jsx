@@ -47,7 +47,7 @@ export default function Complaints() {
             {isAdmin ? 'Manage all member complaints' : 'Raise issues with the society committee'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
             <select className="input w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option value="ALL">All</option>
@@ -161,7 +161,7 @@ function RaiseComplaintModal({ open, onClose, onDone }) {
       }
     >
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Category</label>
             <select className="input" value={form.category} onChange={set('category')}>

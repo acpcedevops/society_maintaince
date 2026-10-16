@@ -63,7 +63,7 @@ export default function Reports() {
           <h1 className="text-xl font-bold text-slate-800">Reports &amp; Audit</h1>
           <p className="text-sm text-slate-400">Financial year {data.year}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select className="input w-auto" value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {yearOptions.map((y) => (
               <option key={y} value={y}>
@@ -90,7 +90,40 @@ export default function Reports() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="card p-5 lg:col-span-2">
           <h3 className="mb-4 text-sm font-semibold text-slate-700">Monthly Detail</h3>
-          <div className="overflow-x-auto">
+          <ul className="space-y-2 lg:hidden">
+            {data.incomeByMonth.map((row, i) => (
+              <li key={row.month} className="rounded-lg border border-slate-100 p-3">
+                <p className="text-sm font-semibold text-slate-700">{monthName(row.month)}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <dt className="text-slate-400">Billed</dt>
+                  <dd className="text-right font-medium text-slate-700">{money(row.billed)}</dd>
+                  <dt className="text-slate-400">Collected</dt>
+                  <dd className="text-right font-medium text-emerald-600">{money(row.collected)}</dd>
+                  <dt className="text-slate-400">Outstanding</dt>
+                  <dd className="text-right font-medium text-red-500">{money(row.outstanding)}</dd>
+                  <dt className="text-slate-400">Expenses</dt>
+                  <dd className="text-right font-medium text-slate-700">
+                    {money(data.expenseByMonth[i]?.amount || 0)}
+                  </dd>
+                </dl>
+              </li>
+            ))}
+            <li className="rounded-lg bg-slate-50 p-3">
+              <p className="text-sm font-semibold text-slate-700">Total</p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <dt className="text-slate-400">Billed</dt>
+                <dd className="text-right font-medium text-slate-700">{money(data.totalBilled)}</dd>
+                <dt className="text-slate-400">Collected</dt>
+                <dd className="text-right font-medium text-emerald-700">{money(data.totalCollected)}</dd>
+                <dt className="text-slate-400">Outstanding</dt>
+                <dd className="text-right font-medium text-red-600">{money(data.outstanding)}</dd>
+                <dt className="text-slate-400">Expenses</dt>
+                <dd className="text-right font-medium text-slate-700">{money(data.totalSpent)}</dd>
+              </dl>
+            </li>
+          </ul>
+
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full">
               <thead className="bg-slate-50">
                 <tr>
