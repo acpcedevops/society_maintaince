@@ -35,6 +35,29 @@ async function generateUniqueCode(name) {
   return code;
 }
 
+// Usernames are globally unique so a person can be a member/admin in several
+// societies. We prefer the bare phone number; when it is already taken we
+// suffix it with the society code (e.g. 9999999999 -> 9999999999-green-valley).
+async function generateUsername(phone, societyId) {
+  const base = String(phone == null ? '' : phone).trim().toLowerCase();
+  if (!base) throw new Error('A phone number is required to create a username');
+
+  const existing = await prisma.user.findUnique({ where: { username: base } });
+  if (!existing) return base;
+
+  const society = societyId ? await prisma.society.findUnique({ where: { id: societyId } }) : null;
+  const suffix = (society ? society.code : 'society').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  let candidate = `${base}-${suffix}`;
+  let n = 1;
+  // eslint-disable-next-line no-await-in-loop
+  while (await prisma.user.findUnique({ where: { username: candidate } })) {
+    n += 1;
+    candidate = `${base}-${suffix}-${n}`;
+  }
+  return candidate;
+}
+
 async function createSocietyDefaults(
   societyId,
   { amount1bhk = 1200, amount2bhk = 1729, lateFeePerDay = 1, dueDay = 15, gateMode = 'GATED' } = {}
@@ -54,5 +77,6 @@ module.exports = {
   DEFAULT_CATEGORIES,
   slugCode,
   generateUniqueCode,
+  generateUsername,
   createSocietyDefaults,
 };

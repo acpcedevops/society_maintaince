@@ -4,6 +4,7 @@ const { z } = require('zod');
 const prisma = require('../lib/prisma');
 const { protect, adminOnly } = require('../middleware/auth');
 const { publicUser } = require('../lib/serialize');
+const { generateUsername } = require('../lib/society');
 
 const router = express.Router();
 
@@ -42,6 +43,7 @@ router.post('/', protect, adminOnly, async (req, res, next) => {
         societyId: req.user.societyId,
         name: data.name,
         phone: data.phone,
+        username: await generateUsername(data.phone, req.user.societyId),
         email: data.email || null,
         passwordHash: await bcrypt.hash(data.password || 'member123', 10),
         role: 'MEMBER',

@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { generateUsername } = require('../src/lib/society');
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,7 @@ async function seedSociety(spec) {
       societyId: society.id,
       name: spec.admin.name,
       phone: spec.admin.phone,
+      username: await generateUsername(spec.admin.phone, society.id),
       email: spec.admin.email || null,
       passwordHash: await bcrypt.hash(spec.admin.password || 'admin123', 10),
       role: 'ADMIN',
@@ -75,6 +77,7 @@ async function seedSociety(spec) {
       societyId: society.id,
       name: spec.guard?.name || 'Gate Guard',
       phone: spec.guard?.phone || '9999900000',
+      username: await generateUsername(spec.guard?.phone || '9999900000', society.id),
       email: spec.guard?.email || null,
       passwordHash: await bcrypt.hash(spec.guard?.password || 'guard123', 10),
       role: 'GUARD',
@@ -89,6 +92,7 @@ async function seedSociety(spec) {
         societyId: society.id,
         name: m.name,
         phone: m.phone,
+        username: await generateUsername(m.phone, society.id),
         email: m.email || null,
         passwordHash: memberPass,
         role: 'MEMBER',

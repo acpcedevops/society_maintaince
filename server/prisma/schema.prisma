@@ -180,6 +180,7 @@ model User {
   societyId    Int
   name         String
   phone        String
+  username     String   @unique
   email        String?
   passwordHash String
   role         Role       @default(MEMBER)

@@ -9,6 +9,7 @@ const EMPTY = {
   name: '',
   email: '',
   phone: '',
+  username: '',
   password: '',
   societyName: '',
   societyAddress: '',
@@ -71,8 +72,8 @@ export default function Login() {
         setNotice(res.message || 'If an account with that email exists, a reset link has been sent.');
         setForm((f) => ({ ...f, email: '' }));
       } else if (mode === 'login') {
-        if (!form.societyId) throw new Error('Please select your society');
-        await login(form.societyId, form.phone.trim(), form.password);
+        if (!form.username.trim()) throw new Error('Please enter your username');
+        await login(form.username.trim(), form.password);
         navigate('/', { replace: true });
       } else if (registerType === 'member') {
         if (!form.societyId) throw new Error('Please select your society');
@@ -189,7 +190,7 @@ export default function Login() {
           )}
 
           <form onSubmit={submit} className="space-y-4">
-            {!isCreate && (
+            {!isCreate && !isLogin && (
               <div>
                 <label className="label">Society</label>
                 <select className="input" value={form.societyId} onChange={set('societyId')} required>
@@ -260,7 +261,21 @@ export default function Login() {
               </div>
             )}
 
-            {!isForgot && (
+            {isLogin && (
+              <div>
+                <label className="label">Username</label>
+                <input
+                  className="input"
+                  value={form.username}
+                  onChange={set('username')}
+                  required
+                  placeholder="Your username (mobile number)"
+                  autoComplete="username"
+                />
+              </div>
+            )}
+
+            {isRegister && (
               <div>
                 <label className="label">Phone Number</label>
                 <input

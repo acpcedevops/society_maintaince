@@ -4,7 +4,7 @@ const { z } = require('zod');
 const prisma = require('../lib/prisma');
 const { signSuper } = require('../lib/jwt');
 const { protectSuper } = require('../middleware/auth');
-const { generateUniqueCode, createSocietyDefaults } = require('../lib/society');
+const { generateUniqueCode, generateUsername, createSocietyDefaults } = require('../lib/society');
 
 const router = express.Router();
 
@@ -185,6 +185,7 @@ router.post('/societies', protectSuper, async (req, res, next) => {
         societyId: society.id,
         name: data.adminName,
         phone: data.adminPhone,
+        username: await generateUsername(data.adminPhone, society.id),
         email: data.adminEmail || null,
         passwordHash: await bcrypt.hash(data.adminPassword, 10),
         role: 'ADMIN',

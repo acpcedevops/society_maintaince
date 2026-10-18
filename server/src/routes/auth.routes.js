@@ -6,7 +6,7 @@ const prisma = require('../lib/prisma');
 const { sign } = require('../lib/jwt');
 const { protect } = require('../middleware/auth');
 const { publicUser } = require('../lib/serialize');
-const { generateUniqueCode, createSocietyDefaults } = require('../lib/society');
+const { generateUniqueCode, generateUsername, createSocietyDefaults } = require('../lib/society');
 const { sendMail } = require('../lib/mailer');
 
 const router = express.Router();
@@ -33,9 +33,8 @@ const adminRegisterSchema = z.object({
 });
 
 const loginSchema = z.object({
-  societyId: z.union([z.string(), z.number()]).optional(),
-  societyCode: z.string().optional(),
-  phone: z.string().min(10),
+  username: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
   password: z.string().min(1),
 });
 
@@ -106,6 +105,7 @@ router.post('/register-society', async (req, res, next) => {
         societyId: society.id,
         name: data.name,
         phone: data.phone,
+        username: await generateUsername(data.phone, society.id),
         email: data.email || null,
         passwordHash: await bcrypt.hash(data.password, 10),
         role: 'ADMIN',
@@ -167,6 +167,7 @@ router.post('/register', async (req, res, next) => {
         societyId: society.id,
         name: data.name,
         phone: data.phone,
+        username: await generateUsername(data.phone, society.id),
         email: data.email || null,
         passwordHash: await bcrypt.hash(data.password, 10),
         role: 'MEMBER',
@@ -192,18 +193,18 @@ router.post('/register', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
   try {
     const login = loginSchema.parse(req.body);
-    const { phone, password } = login;
-    const society = await resolveSociety(login);
-    if (!society) {
-      return res.status(400).json({ error: 'Please select a valid society' });
+    const { password } = login;
+    const username = String(login.username || login.phone || '').trim().toLowerCase();
+    if (!username) {
+      return res.status(400).json({ error: 'Please enter your username' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { societyId_phone: { societyId: society.id, phone } },
+      where: { username },
       include: userInclude,
     });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ error: 'Invalid phone number or password' });
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
     if (user.society && user.society.status === 'REJECTED') {
       return res.status(403).json({ error: 'Your society registration was not approved by the platform.' });
