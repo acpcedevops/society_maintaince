@@ -345,6 +345,19 @@ export default function Login() {
             </a>
           </p>
         </div>
+
+        <footer className="mt-6 text-center text-xs text-brand-100">
+          <p className="font-semibold text-white">SARIN SHANKAR DEORE</p>
+          <p className="mt-1">
+            <a href="mailto:deore.sareen@gmail.com" className="hover:underline">
+              deore.sareen@gmail.com
+            </a>
+            <span className="mx-2 text-brand-200">·</span>
+            <a href="tel:+919594390592" className="hover:underline">
+              9594390592
+            </a>
+          </p>
+        </footer>
       </div>
     </div>
   );
