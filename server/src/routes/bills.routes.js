@@ -5,8 +5,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 const {
   decorateBill,
   getActiveConfig,
-  dueDateFor,
-  expectedAmount,
+  generateBillsForMonth,
 } = require('../lib/billing');
 
 const router = express.Router();
@@ -76,33 +75,7 @@ router.post('/generate', protect, adminOnly, async (req, res, next) => {
       return res.status(400).json({ error: 'No active maintenance configuration found' });
     }
 
-    const units = await prisma.unit.findMany({ where: { societyId: req.user.societyId } });
-    const dueDate = dueDateFor(year, month, config.dueDay);
-
-    let created = 0;
-    let skipped = 0;
-
-    for (const unit of units) {
-      const existing = await prisma.bill.findUnique({
-        where: { unitId_month_year: { unitId: unit.id, month, year } },
-      });
-      if (existing) {
-        skipped += 1;
-        continue;
-      }
-      await prisma.bill.create({
-        data: {
-          unitId: unit.id,
-          month,
-          year,
-          amount: expectedAmount(unit, config),
-          lateFee: 0,
-          status: 'PENDING',
-          dueDate,
-        },
-      });
-      created += 1;
-    }
+    const { created, skipped } = await generateBillsForMonth(req.user.societyId, month, year, config);
 
     res.json({ month, year, created, skipped });
   } catch (err) {

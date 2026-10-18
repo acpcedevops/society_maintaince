@@ -132,7 +132,7 @@ export default function SuperDashboard() {
                 <MiniStat label="Users" value={s.users} />
                 <MiniStat
                   label="Payment"
-                  value={s.paymentConfig?.hasRazorpay || s.paymentConfig?.upiId ? 'Set' : '—'}
+                  value={s.paymentConfig?.hasCashfree || s.paymentConfig?.upiId ? 'Set' : '—'}
                 />
               </div>
 

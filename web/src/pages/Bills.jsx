@@ -5,8 +5,8 @@ import { money, monthName, formatDate, downloadCSV } from '../lib/format.js';
 import {
   createOrder,
   createBulkOrder,
-  loadRazorpay,
-  openRazorpayCheckout,
+  loadCashfree,
+  openCashfreeCheckout,
   verifyPayment,
   verifyBulkPayment,
   mockPay,
@@ -533,7 +533,7 @@ function MemberBills() {
     await startPayment(ids, `All dues (${ids.length} bills)`);
   };
 
-  // Creates an order, then either opens the Razorpay checkout (live/test keys)
+  // Creates an order, then either opens the Cashfree checkout (live/test keys)
   // or the built-in demo gateway when no payment keys are configured.
   const startPayment = async (billIds, label) => {
     setBusy(true);
@@ -544,17 +544,12 @@ function MemberBills() {
         setGateway({ billIds, amount: res.amount, order: res.order, label });
         return;
       }
-      await loadRazorpay();
-      const response = await openRazorpayCheckout({
-        keyId: res.keyId,
-        order: res.order,
-        user,
-        societyName: user?.society?.name,
-      });
+      await loadCashfree(res.mode);
+      await openCashfreeCheckout({ paymentSessionId: res.order.paymentSessionId, mode: res.mode });
       if (billIds.length === 1) {
-        await verifyPayment({ billId: billIds[0], response });
+        await verifyPayment({ orderId: res.order.id });
       } else {
-        await verifyBulkPayment({ billIds, response });
+        await verifyBulkPayment({ orderId: res.order.id });
       }
       await load();
     } catch (err) {
@@ -603,7 +598,7 @@ function MemberBills() {
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
       {societyConfig &&
-        (societyConfig.upiId || societyConfig.bankAccountNumber || societyConfig.hasRazorpay) && (
+        (societyConfig.upiId || societyConfig.bankAccountNumber || societyConfig.hasCashfree) && (
           <SocietyPaymentDetails config={societyConfig} />
         )}
 
@@ -745,7 +740,7 @@ function SocietyPaymentDetails({ config }) {
           </div>
         )}
       </div>
-      {config.hasRazorpay && (
+      {config.hasCashfree && (
         <p className="mt-4 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
           Online card/UPI checkout is available — use the “Pay Now” button on any bill.
         </p>

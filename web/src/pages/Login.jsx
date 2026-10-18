@@ -361,17 +361,18 @@ export default function Login() {
           </p>
         </div>
 
-        <footer className="mt-6 text-center text-xs text-brand-100">
-          <p className="font-semibold text-white">SARIN SHANKAR DEORE</p>
-          <p className="mt-1">
-            <a href="mailto:deore.sareen@gmail.com" className="hover:underline">
-              deore.sareen@gmail.com
-            </a>
-            <span className="mx-2 text-brand-200">·</span>
-            <a href="tel:+919594390592" className="hover:underline">
-              9594390592
-            </a>
-          </p>
+        <footer className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 px-1 text-center text-[10px] leading-tight text-brand-100">
+          <span className="font-semibold text-white">Copyright @dweb</span>
+          <span className="text-brand-200">·</span>
+          <span className="font-semibold text-white">SARIN SHANKAR DEORE</span>
+          <span className="text-brand-200">·</span>
+          <a href="mailto:deore.sareen@gmail.com" className="hover:underline">
+            deore.sareen@gmail.com
+          </a>
+          <span className="text-brand-200">·</span>
+          <a href="tel:+919594390592" className="hover:underline">
+            9594390592
+          </a>
         </footer>
       </div>
     </div>

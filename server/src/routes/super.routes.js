@@ -16,10 +16,10 @@ function publicSuper(admin) {
 
 function maskConfig(config) {
   if (!config) return null;
-  const { razorpayKeySecret, ...rest } = config;
+  const { cashfreeSecretKey, ...rest } = config;
   return {
     ...rest,
-    hasRazorpay: Boolean(config.razorpayKeyId && config.razorpayKeySecret),
+    hasCashfree: Boolean(config.cashfreeAppId && config.cashfreeSecretKey),
   };
 }
 
@@ -30,8 +30,8 @@ const paymentSchema = z.object({
   bankAccountName: z.string().trim().max(120).optional().nullable(),
   bankAccountNumber: z.string().trim().max(40).optional().nullable(),
   bankIfsc: z.string().trim().max(20).optional().nullable(),
-  razorpayKeyId: z.string().trim().max(120).optional().nullable(),
-  razorpayKeySecret: z.string().trim().max(200).optional().nullable(),
+  cashfreeAppId: z.string().trim().max(120).optional().nullable(),
+  cashfreeSecretKey: z.string().trim().max(200).optional().nullable(),
   qrImagePath: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -319,11 +319,11 @@ router.put('/societies/:id/payment', protectSuper, async (req, res, next) => {
       bankAccountName: clean(data.bankAccountName),
       bankAccountNumber: clean(data.bankAccountNumber),
       bankIfsc: clean(data.bankIfsc),
-      razorpayKeyId: clean(data.razorpayKeyId),
+      cashfreeAppId: clean(data.cashfreeAppId),
       qrImagePath: clean(data.qrImagePath),
     };
-    if (data.razorpayKeySecret !== undefined) {
-      payload.razorpayKeySecret = clean(data.razorpayKeySecret);
+    if (data.cashfreeSecretKey !== undefined) {
+      payload.cashfreeSecretKey = clean(data.cashfreeSecretKey);
     }
 
     const config = await prisma.societyPaymentConfig.upsert({

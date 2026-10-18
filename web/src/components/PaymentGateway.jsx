@@ -73,7 +73,7 @@ export default function PaymentGateway({ open, amount, order, user, label, socie
         </div>
 
         <div className="flex items-center justify-between bg-amber-50 px-5 py-2 text-[11px] font-semibold text-amber-700">
-          <span>TEST / SANDBOX MODE — no real money is charged</span>
+          <span>DEMO MODE — online payment gateway not configured</span>
           <span className="rounded bg-amber-100 px-1.5 py-0.5">DEMO</span>
         </div>
 

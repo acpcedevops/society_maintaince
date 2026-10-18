@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   res.json({
     appName: 'Society Maintenance Portal',
-    razorpayConfigured: payments.isConfigured(),
+    cashfreeConfigured: payments.isConfigured(),
   });
 });
 

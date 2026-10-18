@@ -166,8 +166,8 @@ model SocietyPaymentConfig {
   bankAccountName   String?
   bankAccountNumber String?
   bankIfsc          String?
-  razorpayKeyId     String?
-  razorpayKeySecret String?
+  cashfreeAppId     String?
+  cashfreeSecretKey String?
   qrImagePath       String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -244,7 +244,7 @@ model Bill {
   dueDate           DateTime
   paidAt            DateTime?
   paymentMethod     PayMethod?
-  razorpayPaymentId String?
+  gatewayPaymentId  String?
   invoiceNo         String?
   createdAt         DateTime   @default(now())
 
@@ -259,8 +259,8 @@ model Transaction {
   id                Int               @id @default(autoincrement())
   billId            Int
   amount            Int
-  razorpayOrderId   String?
-  razorpayPaymentId String?
+  gatewayOrderId    String?
+  gatewayPaymentId  String?
   method            PayMethod         @default(ONLINE)
   status            TransactionStatus @default(PAID)
   createdAt         DateTime          @default(now())

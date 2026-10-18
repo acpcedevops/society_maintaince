@@ -12,8 +12,8 @@ const EMPTY = {
   bankAccountName: '',
   bankAccountNumber: '',
   bankIfsc: '',
-  razorpayKeyId: '',
-  razorpayKeySecret: '',
+  cashfreeAppId: '',
+  cashfreeSecretKey: '',
   qrImagePath: '',
 };
 
@@ -42,8 +42,8 @@ export default function SuperSociety() {
         bankAccountName: p.bankAccountName || '',
         bankAccountNumber: p.bankAccountNumber || '',
         bankIfsc: p.bankIfsc || '',
-        razorpayKeyId: p.razorpayKeyId || '',
-        razorpayKeySecret: '',
+        cashfreeAppId: p.cashfreeAppId || '',
+        cashfreeSecretKey: '',
         qrImagePath: p.qrImagePath || '',
       });
     } catch (err) {
@@ -101,13 +101,13 @@ export default function SuperSociety() {
         bankAccountName: form.bankAccountName,
         bankAccountNumber: form.bankAccountNumber,
         bankIfsc: form.bankIfsc,
-        razorpayKeyId: form.razorpayKeyId,
+        cashfreeAppId: form.cashfreeAppId,
         qrImagePath: form.qrImagePath,
       };
-      if (form.razorpayKeySecret) {
-        payload.razorpayKeySecret = form.razorpayKeySecret;
-      } else if (!form.razorpayKeyId) {
-        payload.razorpayKeySecret = '';
+      if (form.cashfreeSecretKey) {
+        payload.cashfreeSecretKey = form.cashfreeSecretKey;
+      } else if (!form.cashfreeAppId) {
+        payload.cashfreeSecretKey = '';
       }
       await superApi.put(`/societies/${id}/payment`, payload);
       setSaved('Payment settings saved.');
@@ -207,17 +207,17 @@ export default function SuperSociety() {
             </Field>
           </Section>
 
-          <Section title="Razorpay (optional — enables online checkout)">
-            <Field label="Key ID">
-              <input className="input" value={form.razorpayKeyId} onChange={set('razorpayKeyId')} placeholder="rzp_live_…" />
+          <Section title="Cashfree (optional — enables online checkout)">
+            <Field label="App ID">
+              <input className="input" value={form.cashfreeAppId} onChange={set('cashfreeAppId')} placeholder="Cashfree App ID" />
             </Field>
-            <Field label="Key Secret">
+            <Field label="Secret Key">
               <input
                 className="input"
                 type="password"
-                value={form.razorpayKeySecret}
-                onChange={set('razorpayKeySecret')}
-                placeholder={society.paymentConfig?.hasRazorpay ? '•••••••• saved (leave blank to keep)' : 'Enter key secret'}
+                value={form.cashfreeSecretKey}
+                onChange={set('cashfreeSecretKey')}
+                placeholder={society.paymentConfig?.hasCashfree ? '•••••••• saved (leave blank to keep)' : 'Enter secret key'}
                 autoComplete="new-password"
               />
             </Field>

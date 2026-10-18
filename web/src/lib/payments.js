@@ -1,19 +1,33 @@
 import api from './api.js';
 
-export function loadRazorpay() {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => reject(new Error('Could not load Razorpay SDK.'));
-    document.body.appendChild(script);
-  });
+let sdkPromise = null;
+
+export function loadCashfree(mode = 'production') {
+  if (!sdkPromise) {
+    sdkPromise = new Promise((resolve, reject) => {
+      if (window.Cashfree) return resolve(window.Cashfree);
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.Cashfree) resolve(window.Cashfree);
+        else reject(new Error('Cashfree SDK failed to initialize.'));
+      };
+      script.onerror = () => {
+        sdkPromise = null;
+        reject(new Error('Could not load the Cashfree SDK.'));
+      };
+      document.body.appendChild(script);
+    });
+  }
+  return sdkPromise.then((Cashfree) =>
+    typeof Cashfree === 'function' ? Cashfree({ mode }) : Cashfree
+  );
 }
 
 export async function createOrder(billId) {
   const { data } = await api.post('/payments/create-order', { billId });
-  return data; // { mock, keyId, order, amount }
+  return data; // { mock, mode, order, amount }
 }
 
 export async function createBulkOrder(billIds) {
@@ -21,45 +35,19 @@ export async function createBulkOrder(billIds) {
   return data;
 }
 
-export function openRazorpayCheckout({ keyId, order, user, societyName }) {
-  return new Promise((resolve, reject) => {
-    const rzp = new window.Razorpay({
-      key: keyId,
-      amount: order.amount,
-      currency: order.currency || 'INR',
-      name: societyName || 'Society Maintenance',
-      description: 'Maintenance Payment',
-      order_id: order.id,
-      prefill: { name: user?.name, email: user?.email, contact: user?.phone },
-      theme: { color: '#1f56ec' },
-      handler: (response) => resolve(response),
-      modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
-    });
-    if (rzp.on) {
-      rzp.on('payment.failed', (resp) =>
-        reject(new Error(resp?.error?.description || 'Payment failed'))
-      );
-    }
-    rzp.open();
-  });
+// Opens the hosted Cashfree checkout for a payment session. Resolves once the
+// modal closes; the payment is confirmed server-side via /payments/verify.
+export async function openCashfreeCheckout({ paymentSessionId, mode }) {
+  const cashfree = await loadCashfree(mode || 'production');
+  await cashfree.checkout({ paymentSessionId, redirectTarget: '_modal' });
 }
 
-export async function verifyPayment({ billId, response }) {
-  await api.post('/payments/verify', {
-    billId,
-    razorpay_order_id: response.razorpay_order_id,
-    razorpay_payment_id: response.razorpay_payment_id,
-    razorpay_signature: response.razorpay_signature,
-  });
+export async function verifyPayment({ orderId }) {
+  await api.post('/payments/verify', { order_id: orderId });
 }
 
-export async function verifyBulkPayment({ billIds, response }) {
-  await api.post('/payments/verify-bulk', {
-    billIds,
-    razorpay_order_id: response.razorpay_order_id,
-    razorpay_payment_id: response.razorpay_payment_id,
-    razorpay_signature: response.razorpay_signature,
-  });
+export async function verifyBulkPayment({ orderId }) {
+  await api.post('/payments/verify-bulk', { order_id: orderId });
 }
 
 export async function mockPay(billId) {
