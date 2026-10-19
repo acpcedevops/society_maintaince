@@ -37,7 +37,7 @@ app.use('/api/super', require('./routes/super.routes'));
 // before the guard that protects the rest of the member/bill/payment routes.
 app.use('/api/payments/webhook', require('./routes/payments.webhook.routes'));
 const { denyGuard } = require('./middleware/auth');
-app.use(['/api/units', '/api/members', '/api/bills', '/api/payments', '/api/complaints', '/api/notices', '/api/expenses', '/api/reports'], denyGuard);
+app.use(['/api/units', '/api/members', '/api/bills', '/api/payments', '/api/complaints', '/api/notices', '/api/expenses', '/api/reimbursements', '/api/reports'], denyGuard);
 app.use('/api/units', require('./routes/units.routes'));
 app.use('/api/members', require('./routes/members.routes'));
 app.use('/api/bills', require('./routes/bills.routes'));
@@ -45,6 +45,8 @@ app.use('/api/payments', require('./routes/payments.routes'));
 app.use('/api/complaints', require('./routes/complaints.routes'));
 app.use('/api/notices', require('./routes/notices.routes'));
 app.use('/api/expenses', require('./routes/expenses.routes'));
+app.use('/api/reimbursements', require('./routes/reimbursements.routes'));
+app.use('/api/reimbursements', require('./routes/reimbursements.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
 
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

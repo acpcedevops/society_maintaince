@@ -14,6 +14,7 @@ export const statusStyles = {
   URGENT: 'bg-red-100 text-red-700',
   APPROVED: 'bg-emerald-100 text-emerald-700',
   REJECTED: 'bg-red-100 text-red-700',
+  CREDITED: 'bg-brand-100 text-brand-700',
   DENIED: 'bg-red-100 text-red-700',
   ENTERED: 'bg-brand-100 text-brand-700',
   EXITED: 'bg-slate-200 text-slate-600',

@@ -38,12 +38,20 @@ enum PayMethod {
   CHEQUE
   UPI
   LINK
+  REIMBURSEMENT
 }
 
 enum TransactionStatus {
   CREATED
   PAID
   FAILED
+}
+
+enum ReimbursementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CREDITED
 }
 
 enum ComplaintCategory {
@@ -146,6 +154,8 @@ model Society {
   gatePasses     GatePass[]
   notifications  Notification[]
   paymentConfig  SocietyPaymentConfig?
+  payments       Payment[]
+  reimbursements Reimbursement[]
 }
 
 model SuperAdmin {
@@ -195,6 +205,10 @@ model User {
   notices    Notice[]    @relation("NoticeAuthor")
   expenses   Expense[]
 
+  reimbursementsCreated  Reimbursement[] @relation("ReimbursementCreator")
+  reimbursementsApproved Reimbursement[] @relation("ReimbursementApprover")
+  reimbursementsMember   Reimbursement[] @relation("ReimbursementMember")
+
   gateEntriesCreated  GateEntry[]    @relation("GateEntryCreated")
   gateEntriesLogged   GateEntry[]    @relation("GateEntryLogged")
   gateDecisions       GateEntry[]    @relation("GateEntryDecision")
@@ -221,12 +235,13 @@ model Unit {
   occupants      Int      @default(0)
   createdAt      DateTime @default(now())
 
-  society    Society     @relation(fields: [societyId], references: [id])
+  society    Society    @relation(fields: [societyId], references: [id])
   members    User[]
   bills      Bill[]
   complaints Complaint[]
   gateEntries GateEntry[]
   packages    Package[]
+  reimbursements Reimbursement[]
   gatePasses  GatePass[]
 
   @@unique([societyId, unitNo])
@@ -250,6 +265,8 @@ model Bill {
 
   unit         Unit          @relation(fields: [unitId], references: [id])
   transactions Transaction[]
+  allocations  PaymentAllocation[]
+  reimbursementAllocations ReimbursementAllocation[]
 
   @@unique([unitId, month, year])
   @@index([year, month])
@@ -267,6 +284,44 @@ model Transaction {
 
   bill Bill @relation(fields: [billId], references: [id])
 
+  @@index([billId])
+}
+
+// One row per checkout attempt / received payment (the "parent" of a
+// multi-bill payment). gatewayOrderId is the Cashfree order id we generated.
+model Payment {
+  id               Int               @id @default(autoincrement())
+  societyId        Int
+  gatewayOrderId   String            @unique
+  gatewayPaymentId String?
+  amount           Int
+  status           TransactionStatus @default(CREATED)
+  method           PayMethod         @default(ONLINE)
+  demo             Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  paidAt           DateTime?
+
+  society     Society             @relation(fields: [societyId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([societyId])
+  @@index([status])
+}
+
+// How a received payment is split across bills. Amounts are fixed when the
+// order is created (what the member was actually charged), so allocations
+// always sum to the parent payment amount.
+model PaymentAllocation {
+  id        Int      @id @default(autoincrement())
+  paymentId Int
+  billId    Int
+  amount    Int
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  bill    Bill    @relation(fields: [billId], references: [id])
+
+  @@unique([paymentId, billId])
   @@index([billId])
 }
 
@@ -315,6 +370,7 @@ model ExpenseCategory {
 
   society  Society   @relation(fields: [societyId], references: [id])
   expenses Expense[]
+  reimbursements Reimbursement[]
 
   @@unique([societyId, name])
   @@index([societyId])
@@ -336,9 +392,62 @@ model Expense {
   society   Society         @relation(fields: [societyId], references: [id])
   category  ExpenseCategory @relation(fields: [categoryId], references: [id])
   createdBy User            @relation(fields: [createdById], references: [id])
+  reimbursement Reimbursement?
 
   @@index([societyId])
   @@index([categoryId])
+}
+
+// A society task paid for out-of-pocket by a member and recorded by the
+// admin. On approval an Expense is created for society bookkeeping and the
+// eligible amount can be credited against the member's pending bills.
+model Reimbursement {
+  id             Int                  @id @default(autoincrement())
+  societyId      Int
+  unitId         Int
+  memberId       Int
+  categoryId     Int
+  amount         Int
+  approvedAmount Int?
+  status         ReimbursementStatus @default(PENDING)
+  date           DateTime
+  description    String?              @db.Text
+  receiptPath    String?
+  decisionNote   String?              @db.Text
+  approvedById   Int?
+  approvedAt     DateTime?
+  expenseId      Int?         @unique
+  createdById    Int
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  society    Society          @relation(fields: [societyId], references: [id])
+  unit       Unit             @relation(fields: [unitId], references: [id])
+  member     User             @relation("ReimbursementMember", fields: [memberId], references: [id])
+  category   ExpenseCategory  @relation(fields: [categoryId], references: [id])
+  approvedBy User?            @relation("ReimbursementApprover", fields: [approvedById], references: [id])
+  createdBy  User             @relation("ReimbursementCreator", fields: [createdById], references: [id])
+  expense    Expense?         @relation(fields: [expenseId], references: [id])
+  allocations ReimbursementAllocation[]
+
+  @@index([societyId])
+  @@index([unitId])
+  @@index([status])
+}
+
+// How an approved reimbursement is split across the member's bills.
+model ReimbursementAllocation {
+  id              Int      @id @default(autoincrement())
+  reimbursementId Int
+  billId          Int
+  amount          Int
+  createdAt       DateTime @default(now())
+
+  reimbursement Reimbursement @relation(fields: [reimbursementId], references: [id])
+  bill          Bill          @relation(fields: [billId], references: [id])
+
+  @@index([reimbursementId])
+  @@index([billId])
 }
 
 model MaintenanceConfig {

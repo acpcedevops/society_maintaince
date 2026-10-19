@@ -8,6 +8,7 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: icons.dashboard, end: true },
   { to: '/bills', label: 'Bills & Payments', icon: icons.bills },
   { to: '/expenses', label: 'Expenses', icon: icons.expenses, admin: true },
+  { to: '/reimbursements', label: 'Reimbursements', icon: icons.check },
   { to: '/reports', label: 'Reports & Audit', icon: icons.reports, admin: true },
   { to: '/complaints', label: 'Complaints', icon: icons.complaints },
   { to: '/notices', label: 'Notices', icon: icons.notices },

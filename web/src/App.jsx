@@ -11,6 +11,7 @@ import Notices from './pages/Notices.jsx';
 import Members from './pages/Members.jsx';
 import Flats from './pages/Flats.jsx';
 import Expenses from './pages/Expenses.jsx';
+import Reimbursements from './pages/Reimbursements.jsx';
 import Reports from './pages/Reports.jsx';
 import Gate from './pages/Gate.jsx';
 import SuperLogin from './pages/super/SuperLogin.jsx';
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="bills" element={<Bills />} />
             <Route path="complaints" element={<Complaints />} />
             <Route path="notices" element={<Notices />} />
+            <Route path="reimbursements" element={<Reimbursements />} />
 
             <Route element={<AdminRoute />}>
               <Route path="expenses" element={<Expenses />} />
